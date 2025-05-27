@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time as t
 
-def lookback_option(price, volatility, expected_return, rate, time, min_price, dt = 1/252, nb_paths = 10000, fee = 0.05, plot = False):
+def lookback_option(price, volatility, expected_return, rate, time, min_price = 10**10, dt = 1/252, nb_paths = 10000, fee = 0.05, plot = False):
     """
     Prices a European lookback option using Monte Carlo simulation.
     
@@ -55,7 +55,21 @@ def lookback_option(price, volatility, expected_return, rate, time, min_price, d
 
     return option_price
 
+
 if __name__ == "__main__":
+    price = 225.74
+    volatility = 0.1285
+    exppected_return = 0.0
+    rate = 0.03
+    time = (16 - 1)/252
+    min_price = 223.65
+    "225.74 12.85 0.08 16 223.65 283.9926393563352"
+
+    print(lookback_option(price, volatility, exppected_return, rate, time, min_price = min_price, nb_paths=1000))
+
+    print(lookback_option(price, volatility, exppected_return, rate, time, min_price = min_price, nb_paths=1000000))
+
+if __name__ == "__main_":
     # Example parameters
     price = 100  # Initial asset price
     volatility = 0.2  # Volatility of the underlying asset (20%)
