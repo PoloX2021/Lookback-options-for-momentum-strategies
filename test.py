@@ -41,7 +41,7 @@ def test_returns():
         expected_returns_data=expected_returns_df,
         start_day=0,
         lookback=5,
-        waiting=2,
+        waiting=22,
         holding=3,
         top_quantile=0.2,
         bottom_quantile=0.2,

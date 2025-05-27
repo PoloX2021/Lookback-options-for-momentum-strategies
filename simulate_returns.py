@@ -1,7 +1,7 @@
 import pandas as pd
 from momentum_single_signal import generate_momentum_signals
 from montecarlo import lookback_option
-def compute_returns(price_data, vol_data, expected_returns_data, start_day=0, lookback=20, waiting=1, holding=5, top_quantile=0.2, bottom_quantile=0.2, long_only=False):
+def compute_returns(price_data, vol_data, expected_returns_data, start_day=0, lookback=20, waiting=1, holding=5, top_quantile=0.2, bottom_quantile=0.2, long_only=False, with_options = False):
     """
     Generate momentum signals based on past returns.
 
@@ -44,26 +44,32 @@ def compute_returns(price_data, vol_data, expected_returns_data, start_day=0, lo
 
         # Get the returns from holding
         for d in range(day - holding - waiting, day - waiting):
-            returns += (price_data.iloc[d] / price_data.iloc[d - 1] - 1).dot(hold_signals_df[d].iloc[day])
-            i+=1
-            
-        # Get the returns from reversing (option)
-        for d in range(day - waiting, day):
-            for tick in reverse_signals.columns:
-                res = reverse_signals_df[d][tick].iloc[day]
-                if res > 0:
-                    if option_prices_df[d][tick].iloc[day] == 0:
-                        min_price = price_data[tick].iloc[d:day+1].min() # The +1 allows to account for the current day for the realized payoff
-                        option_prices_df[d].loc[day, tick] = lookback_option(price_data[tick].iloc[day], vol_data[tick].iloc[day], expected_return=expected_returns_data[tick].iloc[day], rate=0.03,time=(res-1)/252, min_price=min_price, dt=1/252, nb_paths=1000, fee= 0.05)
-                        
-                    if option_prices_df[d][tick].iloc[day - 1] == 0:
-                        min_price = price_data[tick].iloc[d:day].min() # The +1 allows to account for the current day for the realized payoff. it its cancelled by the -1
-                        option_prices_df[d].loc[day - 1, tick] = lookback_option(price_data[tick].iloc[day - 1], vol_data[tick].iloc[day - 1], expected_return=expected_returns_data[tick].iloc[day - 1], rate=0.03,time=(res)/252, min_price=min_price, dt=1/252, nb_paths=1000, fee= 0.05)
-                        
-                    # If we allocate $1000 to every allocation, then we should buy 1000/S0 options
-                    S = price_data[tick].iloc[d]
-                    returns += (option_prices_df[d][tick].iloc[day] + S - S/1000 * option_prices_df[d][tick].iloc[d]) / (option_prices_df[d][tick].iloc[day - 1] + S - S/1000 * option_prices_df[d][tick].iloc[d]) - 1
-                    i+=1
+            if (hold_signals_df[d].iloc[day]).sum() != 0:
+                returns += (price_data.iloc[day] / price_data.iloc[day - 1] - 1).dot(hold_signals_df[d].iloc[day]) / (hold_signals_df[d].iloc[day]).sum()
+                i+= 1
+        
+        if with_options:
+            # Get the returns from reversing (option)
+            for d in range(day - waiting, day):
+                temp = 0
+                j = 0
+                for tick in reverse_signals.columns:
+                    res = reverse_signals_df[d][tick].iloc[day]
+                    if res > 0:
+                        if option_prices_df[d][tick].iloc[day] == 0:
+                            min_price = price_data[tick].iloc[d:day+1].min() # The +1 allows to account for the current day for the realized payoff
+                            option_prices_df[d].loc[day, tick] = lookback_option(price_data[tick].iloc[day], vol_data.iloc[day], expected_return=expected_returns_data.iloc[day], rate=0.03,time=(res-1)/252, min_price=min_price, dt=1/252, nb_paths=1000, fee= 0.05)
+
+                        if option_prices_df[d][tick].iloc[day - 1] == 0:
+                            min_price = price_data[tick].iloc[d:day].min() # The +1 allows to account for the current day for the realized payoff. it its cancelled by the -1
+                            option_prices_df[d].loc[day - 1, tick] = lookback_option(price_data[tick].iloc[day - 1], vol_data.iloc[day - 1], expected_return=expected_returns_data.iloc[day - 1], rate=0.03,time=(res)/252, min_price=min_price, dt=1/252, nb_paths=1000, fee= 0.05)
+
+                        # If we allocate $1000 to every allocation, then we should buy 1000/S0 options
+                        S = price_data[tick].iloc[d]
+                        temp += ((option_prices_df[d][tick].iloc[day] - option_prices_df[d][tick].iloc[d]) + S) / ((option_prices_df[d][tick].iloc[day - 1] - option_prices_df[d][tick].iloc[d])+ S) - 1
+                        j+=1
+                returns+= temp / j if j > 0 else 0
+                i+=1 if j > 0 else 0
         
         if i > 0:
             returns_df[day] = returns / i
