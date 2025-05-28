@@ -58,11 +58,11 @@ def compute_returns(price_data, vol_data, expected_returns_data, start_day=0, lo
                     if res > 0:
                         if option_prices_df[d][tick].iloc[day] == 0:
                             min_price = price_data[tick].iloc[d:day+1].min() # The +1 allows to account for the current day for the realized payoff
-                            option_prices_df[d].loc[day, tick] = lookback_option(price_data[tick].iloc[day], vol_data.iloc[day], expected_return=expected_returns_data.iloc[day], rate=0.03,time=(res-1)/252, min_price=min_price, dt=1/252, nb_paths=1000, fee= 0.05)
+                            option_prices_df[d].loc[day, tick] = lookback_option(price_data[tick].iloc[day], vol_data[tick].iloc[day], expected_return=expected_returns_data.iloc[day], rate=0.03,time=(res-1)/252, min_price=min_price, dt=1/252, nb_paths=1000, fee= 0.05)
 
                         if option_prices_df[d][tick].iloc[day - 1] == 0:
                             min_price = price_data[tick].iloc[d:day].min() # The +1 allows to account for the current day for the realized payoff. it its cancelled by the -1
-                            option_prices_df[d].loc[day - 1, tick] = lookback_option(price_data[tick].iloc[day - 1], vol_data.iloc[day - 1], expected_return=expected_returns_data.iloc[day - 1], rate=0.03,time=(res)/252, min_price=min_price, dt=1/252, nb_paths=1000, fee= 0.05)
+                            option_prices_df[d].loc[day - 1, tick] = lookback_option(price_data[tick].iloc[day - 1], vol_data[tick].iloc[day - 1], expected_return=expected_returns_data.iloc[day - 1], rate=0.03,time=(res)/252, min_price=min_price, dt=1/252, nb_paths=1000, fee= 0.05)
 
                         # If we allocate $1000 to every allocation, then we should buy 1000/S0 options
                         S = price_data[tick].iloc[d]
